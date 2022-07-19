@@ -11,6 +11,7 @@ opcua-modeler = "*"
 pyqtgraph = "*"
 
 [dev-packages]
+ipython = "*"
 
 [requires]
 python_version = "3.9"
