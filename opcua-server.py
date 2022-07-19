@@ -82,12 +82,14 @@ class CosinusUpdater(VarUpdater):
 class NoiseUpdater(VarUpdater):
     """Updates with some noise over a given value."""
 
-    def __init__(self, var, base_value: float, noise_amplitude: float):  # ### TODO implement and apply to sensor
+    def __init__(self, var, base_value: float, noise_amplitude: float):
         VarUpdater.__init__(self, var)
+        self.base_value = base_value
+        self.noise_amplitude = noise_amplitude
 
     def update(self, arg):
         # print(f"NoiseUpdater.update({arg})")
-        return cos(arg)
+        return self.base_value + self.noise_amplitude * random.random()
 
 
 class StateGraph():
@@ -241,7 +243,8 @@ def create_mixer(server: Server, ns_idx: int, identifier: str) -> MixerType:
     state_var = mixer_obj.get_child([f"{ns_idx}:controller", f"{ns_idx}:state"])
     mixer.state_updater = StateGraphUpdater(state_var, MixerStateGraph())
     sensor_var = mixer_obj.get_child(f"{ns_idx}:sensor")
-    mixer.sensor_updater = SinusUpdater(sensor_var)
+    # mixer.sensor_updater = SinusUpdater(sensor_var)
+    mixer.sensor_updater = NoiseUpdater(sensor_var, 47.4, 2.0)
 
     mixer_obj.add_method(ns_idx, "start mixer", start_mixer)
     mixer_obj.add_method(ns_idx, "stop mixer", stop_mixer)
