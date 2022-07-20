@@ -1,4 +1,11 @@
-"""A OPC UA server implementing a simple mixer unit."""
+"""An OPC UA server implementing a simple mixer unit.
+
+To keep things simple and understandable the number of properties and variables is reduced to a minimum.
+The dynamics of the 'device' is simulated.
+
+Events are not implemented (yet?).
+
+"""
 
 from threading import Thread
 import copy
@@ -15,7 +22,8 @@ from IPython import embed
 from opcua import Server, uamethod
 
 endpoint = "opc.tcp://127.0.0.1:4840"
-data_spec = "server.xml"
+namespace = "hackathon"
+data_spec = "opcserver.xml"
 
 # Maps node ids to digital twins.
 node_to_instance = {}
@@ -88,7 +96,7 @@ class NoiseUpdater(VarUpdater):
         self.noise_amplitude = noise_amplitude
 
     def update(self, arg):
-        # print(f"NoiseUpdater.update({arg})")
+        print(f"NoiseUpdater.update({arg})")
         return self.base_value + self.noise_amplitude * random.random()
 
 
@@ -243,7 +251,6 @@ def create_mixer(server: Server, ns_idx: int, identifier: str) -> MixerType:
     state_var = mixer_obj.get_child([f"{ns_idx}:controller", f"{ns_idx}:state"])
     mixer.state_updater = StateGraphUpdater(state_var, MixerStateGraph())
     sensor_var = mixer_obj.get_child(f"{ns_idx}:sensor")
-    # mixer.sensor_updater = SinusUpdater(sensor_var)
     mixer.sensor_updater = NoiseUpdater(sensor_var, 47.4, 2.0)
 
     mixer_obj.add_method(ns_idx, "start mixer", start_mixer)
@@ -258,6 +265,7 @@ def create_mixer(server: Server, ns_idx: int, identifier: str) -> MixerType:
 
 
 def setup_server(endpoint: str) -> Server:
+    """Setup the server with endpoint."""
     server = Server()
     server.set_endpoint(endpoint)
     print("Starting server at " + endpoint)
@@ -266,7 +274,7 @@ def setup_server(endpoint: str) -> Server:
 
 def register_namespace(server: Server) -> int:
     """Create namespace and return its index."""
-    return server.register_namespace("hackathon")
+    return server.register_namespace(namespace)
 
 
 if __name__ == "__main__":
@@ -275,7 +283,7 @@ if __name__ == "__main__":
 
     mixer1 = create_mixer(server, ns_idx, "Mixer 1")
     server.start()
-    server.export_xml_by_ns("opcserver.xml", [ns_idx])
+    server.export_xml_by_ns(data_spec, [ns_idx])
     try:
         mixer1.start_simulation()
         embed()
